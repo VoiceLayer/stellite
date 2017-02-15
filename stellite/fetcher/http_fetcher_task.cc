@@ -30,6 +30,7 @@ HttpFetcherTask::HttpFetcherTask(HttpFetcher* http_fetcher, int request_id,
                                  base::WeakPtr<Visitor> delegate)
     : http_fetcher_(http_fetcher),
       request_id_(request_id),
+      sent_chunk_(false),
       visitor_(delegate) {
 }
 
@@ -143,12 +144,10 @@ void HttpFetcherTask::OnFetchStream(
 
   if (visitor_.get()) {
     visitor_->OnTaskStream(request_id_, source, response_info,
-                           data, len, fin);
+                           data, len, !sent_chunk_, fin);
   }
 
-  if (fin) {
-    http_fetcher_->OnTaskComplete(request_id_);
-  }
+  sent_chunk_ = true;
 }
 
 void HttpFetcherTask::OnFetchTimeout() {

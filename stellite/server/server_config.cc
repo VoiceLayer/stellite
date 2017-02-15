@@ -202,6 +202,8 @@ bool ServerConfig::ParseConfigFile(const base::FilePath& config_path) {
 bool ServerConfig::ParseCommandLine(const base::CommandLine* command_line) {
   CHECK(command_line);
 
+  logging::SetMinLogLevel(-1);
+
   if (command_line->HasSwitch(kConfig)) {
     return ParseConfigFile(command_line->GetSwitchValuePath(kConfig));
   }

@@ -52,7 +52,7 @@ class NET_EXPORT ProxyStream : public QuicSimpleServerStream,
 
   void OnTaskStream(int request_id, const URLFetcher* source,
                     const HttpResponseInfo* response_info,
-                    const char* data, size_t len, bool fin) override;
+                    const char* data, size_t len, bool start, bool fin) override;
 
   void OnTaskError(int request_id, const URLFetcher* source,
                    int error_code) override;
@@ -69,6 +69,10 @@ class NET_EXPORT ProxyStream : public QuicSimpleServerStream,
       const std::string& contents);
 
   void WriteAccessLog(int response_code, int64_t msec);
+
+  void SendHeaders(SpdyHeaderBlock response_headers);
+
+  void SendTrailers();
 
  private:
   ServerSession* per_connection_session_;

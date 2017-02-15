@@ -47,7 +47,7 @@ class STELLITE_EXPORT HttpFetcherTask : public HttpFetcherDelegate {
     virtual void OnTaskStream(int request_id,
                               const net::URLFetcher* source,
                               const net::HttpResponseInfo* response_info,
-                              const char* data, size_t len, bool fin) = 0;
+                              const char* data, size_t len, bool first, bool fin) = 0;
 
     virtual void OnTaskError(int request_id,
                              const net::URLFetcher* source,
@@ -84,6 +84,7 @@ class STELLITE_EXPORT HttpFetcherTask : public HttpFetcherDelegate {
  private:
   HttpFetcher* http_fetcher_; /* not owned */
   int request_id_;
+  bool sent_chunk_;
 
   base::WeakPtr<Visitor> visitor_;
   std::unique_ptr<HttpFetcherImpl> url_fetcher_;

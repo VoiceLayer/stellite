@@ -78,12 +78,43 @@ void ProxyStream::OnTaskComplete(int request_id, const URLFetcher* source,
 
 void ProxyStream::OnTaskStream(int request_id, const URLFetcher* source,
                                const HttpResponseInfo* response_info,
-                               const char* data, size_t len, bool fin) {
-  if (len == 0 || !fin) {
-    return;
+                               const char* data, size_t len, bool first, bool fin) {
+
+  LOG(INFO) << "OnTaskStream "
+            << "len: "
+            << len
+            << " first: "
+            << first
+            << " fin: "
+            << fin;
+  if (source == NULL) {
+   LOG(ERROR) << "URLFetcher reseponse callback with NULL fetcher.";
+   return;
   }
 
-  WriteOrBufferData(std::string(data, len), fin, nullptr);
+  if (first) {
+    // Headers
+    scoped_refptr<HttpResponseHeaders> headers = source->GetResponseHeaders();
+    if (headers == nullptr) {
+     headers = BuildCustomHeader(source->GetResponseCode(),
+                                 source->GetURL(), "");
+    }
+
+    SpdyHeaderBlock spdy_headers;
+    CreateSpdyHeadersFromHttpResponse(*headers, &spdy_headers);
+
+    SendHeaders(std::move(spdy_headers));
+  }
+
+  if (len != 0) {
+    WriteOrBufferData(std::string(data, len), fin, nullptr);
+  }
+
+  if (fin) {
+    SendTrailers();
+    per_connection_session_->AddHttpStat(kHttpReceived, 1);
+    WriteAccessLog(source->GetResponseCode(), -1);
+  }
 }
 
 void ProxyStream::OnTaskError(int request_id, const URLFetcher* source,
@@ -145,6 +176,7 @@ void ProxyStream::SendResponse() {
     http_request.is_chunked_upload = true;
     http_request.is_stream_response = true;
   } else {
+    http_request.is_stream_response = true;
     const std::string& payload = body();
     http_request.upload_stream.write(payload.data(), payload.size());
   }
@@ -212,6 +244,30 @@ void ProxyStream::WriteAccessLog(int response_code, int64_t msec) {
             << "::" << response_code
             << "::" << request_method
             << "::" << proxy_url_;
+}
+
+void ProxyStream::SendHeaders(SpdyHeaderBlock response_headers) {
+  // This server only supports SPDY and HTTP, and neither handles bidirectional
+  // streaming.
+  if (!reading_stopped()) {
+    StopReading();
+  }
+
+  // Send the headers, with a FIN if there's nothing else to send.
+  bool send_fin = false;
+  LOG(INFO) << "Writing headers (fin = " << send_fin
+           << ") : " << response_headers.DebugString();
+  WriteHeaders(std::move(response_headers), send_fin, nullptr);
+
+}
+
+void ProxyStream::SendTrailers() {
+      SpdyHeaderBlock response_trailers = SpdyHeaderBlock();
+
+      // Send the trailers. A FIN is always sent with trailers.
+      LOG(INFO) << "Writing trailers (fin = true): "
+               << response_trailers.DebugString();
+      WriteTrailers(std::move(response_trailers), nullptr);
 }
 
 }  // namespace net
