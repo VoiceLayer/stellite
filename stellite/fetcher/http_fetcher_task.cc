@@ -40,6 +40,7 @@ void HttpFetcherTask::Start(const HttpRequest& request,
                             int64_t timeout_msec) {
   GURL url(request.url);
 
+  LOG(INFO) << "HttpFetcherTask::Start";
   net::URLFetcher::RequestType request_type = net::URLFetcher::GET;
   if (request.request_type == HttpRequest::POST) {
     request_type = net::URLFetcher::POST;
@@ -109,6 +110,7 @@ void HttpFetcherTask::OnFetchComplete(
     const net::URLFetcher* source,
     const net::HttpResponseInfo* response_info) {
 
+  LOG(INFO) << "OnFetchComplete";
   if (url_fetch_timeout_timer_.get()) {
     url_fetch_timeout_timer_->Stop();
   }
@@ -151,6 +153,7 @@ void HttpFetcherTask::OnFetchStream(
 }
 
 void HttpFetcherTask::OnFetchTimeout() {
+  LOG(INFO) << "OnFetchTimeout";
   if (visitor_.get()) {
     visitor_->OnTaskError(request_id_, url_fetcher(), net::ERR_TIMED_OUT);
   }

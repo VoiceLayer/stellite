@@ -129,6 +129,8 @@ int main(int argc, char *argv[]) {
   stellite::HttpClientContext::Params params;
   params.using_quic = true;
   params.using_http2 = true;
+  std::string quic_origin = line->GetSwitchValueASCII("url")+":443";
+  params.origins_to_force_quic_on.push_back(quic_origin);
 
   std::unique_ptr<stellite::HttpCallback> callback(
       new stellite::HttpCallback());
@@ -137,17 +139,26 @@ int main(int argc, char *argv[]) {
   context.Initialize();
 
   stellite::HttpRequest chunked_upload_request;
+  chunked_upload_request.request_type = stellite::HttpRequest::POST;
   chunked_upload_request.url = line->GetSwitchValueASCII("url");
   chunked_upload_request.is_chunked_upload = true;
-  chunked_upload_request.is_stream_response = true;
+  // chunked_upload_request.is_stream_response = true;
+  chunked_upload_request.headers.SetHeader("Transfer-Encoding", "chunked");
+	chunked_upload_request.headers.SetHeader("Content-Type", "audio/x-wav");
+	chunked_upload_request.headers.SetHeader("Accept-Encoding", "*;q=0");
+
 
   stellite::HttpClient* client = context.CreateHttpClient(callback.get());
   int request_id = client->Request(chunked_upload_request, 0);
   CHECK(request_id >= 0);
 
+  std::string done ("done");
+
   while (true) {
     std::string chunk;
     std::getline(std::cin, chunk);
+
+    if (chunk.compare(done) == 0) break;
     client->AppendChunkToUpload(request_id, chunk, false);
   }
 

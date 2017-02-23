@@ -83,12 +83,26 @@ void HttpFetcher::StartRequest(int request_id,
   HttpFetcherTask* task = new HttpFetcherTask(this, request_id, d);
   task_map_.insert(std::make_pair(request_id, base::WrapUnique(task)));
 
+  LOG(INFO) << "Inserted "
+            << request_id
+            << " map size: "
+            << task_map_.size()
+            << " map: "
+            << static_cast<void*>(&task_map_);
+
   task->Start(http_request, timeout);
 }
 
 void HttpFetcher::StartAppendChunkToUpload(int request_id,
                                            const std::string& data,
                                            bool is_last_chunk) {
+  LOG(INFO) << "Searching for "
+            << request_id
+            << " map size: "
+            << task_map_.size()
+            << " map: "
+            << static_cast<void*>(&task_map_);
+
   TaskMap::iterator it = task_map_.find(request_id);
   if (it == task_map_.end()) {
     LOG(ERROR) << "invalid request_id for append chunk upload";
@@ -111,6 +125,7 @@ void HttpFetcher::StartAppendChunkToUpload(int request_id,
 }
 
 void HttpFetcher::Cancel(int request_id) {
+  LOG(INFO) << "task cancel";
   HttpFetcherTask* task = FindTask(request_id);
   if (task == nullptr) {
     return;
@@ -131,6 +146,7 @@ HttpFetcherTask* HttpFetcher::FindTask(int request_id) {
 }
 
 void HttpFetcher::OnTaskComplete(int request_id) {
+  LOG(INFO) << "task complete";
   task_map_.erase(request_id);
 }
 
