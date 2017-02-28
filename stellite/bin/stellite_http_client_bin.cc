@@ -147,6 +147,7 @@ int main(int argc, char *argv[]) {
   // set protocol
   params.using_quic = true;
   params.using_http2 = true;
+  params.ignore_certificate_errors = true;
 
   // set quic host
   if (FLAGS_host.size() && FLAGS_port.size()) {
@@ -168,6 +169,7 @@ int main(int argc, char *argv[]) {
     stellite::HttpRequest request;
     request.url = command;
     request.request_type = stellite::HttpRequest::GET;
+    request.is_stream_response = true;
     client->Request(request);
   }
   context.ReleaseHttpClient(client);

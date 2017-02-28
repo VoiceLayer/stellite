@@ -45,6 +45,8 @@ class NET_EXPORT ProxyStream : public QuicSimpleServerStream,
 
   ~ProxyStream() override;
 
+  void OnDataAvailable() override;
+
   // Implements HttpFetcherDelegate
   // OnFetchComplete may have success and error except timeout
   void OnTaskComplete(int request_id, const URLFetcher* source,
@@ -70,6 +72,14 @@ class NET_EXPORT ProxyStream : public QuicSimpleServerStream,
 
   void WriteAccessLog(int response_code, int64_t msec);
 
+  void SendHeaders(SpdyHeaderBlock response_headers);
+
+  void SendTrailers();
+
+  void SendRequest();
+
+  URLFetcher::RequestType getMethod();
+
  private:
   ServerSession* per_connection_session_;
 
@@ -84,6 +94,14 @@ class NET_EXPORT ProxyStream : public QuicSimpleServerStream,
   GURL proxy_url_;
 
   URLFetcher::RequestType proxy_method_;
+
+  bool upstream_header_sent_;
+
+  bool downstream_header_sent_;
+
+  int request_id_;
+
+  bool has_proxy_method_;
 
   // HTTP fetcher may have accessed after a proxy stream was released
   base::WeakPtrFactory<ProxyStream> weak_factory_;
